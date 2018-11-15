@@ -45,12 +45,12 @@ void *heap_init(size_t initial_size) {
                     NULL,
                     get_min_block_size(initial_size),
                     1);
-    return ptr + sizeof(struct mem_t);
+    return (char*)ptr + sizeof(struct mem_t);
 }
 
 static void *allocate_page(struct mem_t *mem_header, size_t query) {
     if (mem_header->capacity / 2 > sizeof(struct mem_t)) {
-        struct mem_t *new_mem_header = mem_header + sizeof(struct mem_t) + mem_header->capacity / 2;
+        struct mem_t *new_mem_header = (struct mem_t *)((char*)mem_header + sizeof(struct mem_t) + mem_header->capacity / 2);
         init_mem_header(new_mem_header,
                         mem_header->next,
                         mem_header->capacity / 2 - sizeof(struct mem_t),
@@ -59,7 +59,7 @@ static void *allocate_page(struct mem_t *mem_header, size_t query) {
         mem_header->capacity = mem_header->capacity / 2;
     }
     mem_header->is_free = 0;
-    return mem_header + sizeof(struct mem_t);
+    return (char*)mem_header + sizeof(struct mem_t);
 }
 
 static void *try_allocate_block(size_t query) {
@@ -76,7 +76,7 @@ static void *try_allocate_block(size_t query) {
 static void *try_allocate_new_block(size_t query) {
     struct mem_t *mem_header = HEAP_START;
     while ((mem_header = mem_header->next) != NULL);
-    void *new_block = mmap(mem_header + sizeof(struct mem_t) + mem_header->capacity,
+    void *new_block = mmap((char*)mem_header + sizeof(struct mem_t) + mem_header->capacity,
                            get_min_block_size(query),
                            PROT_READ | PROT_WRITE,
                            MAP_PRIVATE | MAP_ANONYMOUS,
@@ -126,14 +126,14 @@ void _free(void *mem) {
     mem_header->is_free = 1;
     if (prev_mem_header
         && prev_mem_header->is_free
-        && prev_mem_header + prev_mem_header->capacity + sizeof(struct mem_t) == mem_header) {
+        && ((struct mem_t*)((char*)prev_mem_header) + prev_mem_header->capacity + sizeof(struct mem_t)) == mem_header) {
         prev_mem_header->capacity += mem_header->capacity + sizeof(struct mem_t);
         prev_mem_header->next = mem_header->next;
         mem_header = prev_mem_header;
     }
     if (mem_header->next
         && mem_header->next->is_free
-        && mem_header->next == mem_header + mem_header->capacity + sizeof(mem_header)) {
+        && mem_header->next == ((struct mem_t*)((char*)mem_header) + mem_header->capacity + sizeof(mem_header))) {
         mem_header->capacity += mem_header->next->capacity + sizeof(struct mem_t);
         mem_header->next = mem_header->next->next;
     }
