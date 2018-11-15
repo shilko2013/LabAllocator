@@ -35,16 +35,20 @@ static void part_memory(size_t initial_size) {
     struct mem_t *mem_header = HEAP_START;
     size_t number_blocks = initial_size / (BLOCK_SIZE + sizeof(struct mem_t));
     struct mem_t *prev_mem_header;
-    for (size_t i = 0; i < number_blocks - 1; ++i) {
+    for (size_t i = 0; i < number_blocks; ++i) {
         init_mem_header(mem_header, (struct mem_t *) (((char *) mem_header) + sizeof(struct mem_t) + BLOCK_SIZE),
                         BLOCK_SIZE, 1);
         prev_mem_header = mem_header;
         mem_header = (struct mem_t *) (((char *) mem_header) + sizeof(struct mem_t) + BLOCK_SIZE);
     }
-    if (!(initial_size - (BLOCK_SIZE + sizeof(struct mem_t) * (number_blocks - 1))))
+    size_t remain = (initial_size - (BLOCK_SIZE + sizeof(struct mem_t)) * (number_blocks - 1));
+    if (!remain)
         prev_mem_header->next = NULL;
-    else
-        init_mem_header(mem_header, NULL, initial_size - (BLOCK_SIZE + sizeof(struct mem_t) * (number_blocks - 1)), 1);
+    else if (remain <= sizeof(struct mem_t)) {
+        prev_mem_header->next = NULL;
+        prev_mem_header->capacity += remain;
+    } else
+        init_mem_header(mem_header, NULL, remain, 1);
 }
 
 void *heap_init(size_t initial_size) {
