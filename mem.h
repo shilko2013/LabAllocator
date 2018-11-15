@@ -13,6 +13,8 @@
 
 #define PAGE_SIZE 0x1000
 
+#define BLOCK_SIZE 0x400
+
 struct mem_t;
 
 #pragma pack(push, 1)
