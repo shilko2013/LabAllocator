@@ -1,6 +1,7 @@
 #include "mem.h"
 
 #define MEM_T_SIZE sizeof(mem_t)
+#define NEXT_MEM_T_OFFSET MEM_T_SIZE + BLOCK_SIZE
 
 void memalloc_debug_struct_info(FILE *f, mem_t const *const address) {
     size_t i;
@@ -34,15 +35,15 @@ static void init_mem_header(mem_t *this, mem_t *next, size_t capacity, int is_fr
 
 static void part_memory(size_t initial_size) {
     mem_t *mem_header = HEAP_START;
-    size_t number_blocks = initial_size / (BLOCK_SIZE + MEM_T_SIZE);
+    size_t number_blocks = initial_size / (NEXT_MEM_T_OFFSET);
     mem_t *prev_mem_header;
     for (size_t i = 0; i < number_blocks; ++i) {
-        init_mem_header(mem_header, (mem_t *) (((char *) mem_header) + MEM_T_SIZE + BLOCK_SIZE),
+        init_mem_header(mem_header, (mem_t *) (((char *) mem_header) + NEXT_MEM_T_OFFSET),
                         BLOCK_SIZE, 1);
         prev_mem_header = mem_header;
-        mem_header = (mem_t *) (((char *) mem_header) + MEM_T_SIZE + BLOCK_SIZE);
+        mem_header = (mem_t *) (((char *) mem_header) + NEXT_MEM_T_OFFSET);
     }
-    size_t remain = (initial_size - (BLOCK_SIZE + MEM_T_SIZE) * (number_blocks - 1));
+    size_t remain = (initial_size - (NEXT_MEM_T_OFFSET) * (number_blocks - 1));
     if (!remain)
         prev_mem_header->next = NULL;
     else if (remain <= MEM_T_SIZE) {
