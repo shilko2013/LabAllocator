@@ -18,9 +18,9 @@ void memalloc_debug_struct_info(FILE *f, mem_t const *const address) {
     putc('\n', f);
 }
 
-void memalloc_debug_heap(FILE *f, mem_t const *ptr) {
-    for (; ptr; ptr = ptr->next)
-        memalloc_debug_struct_info(f, ptr);
+void memalloc_debug_heap(FILE *f, mem_t const *mem_ptr) {
+    for (; mem_ptr; mem_ptr = mem_ptr->next)
+        memalloc_debug_struct_info(f, mem_ptr);
 }
 
 static uint64_t get_min_block_size(uint64_t size) {
@@ -54,12 +54,12 @@ static void part_memory(size_t initial_size) {
 }
 
 void *heap_init(size_t initial_size) {
-    void *ptr = mmap(HEAP_START,
+    void *new_map_ptr = mmap(HEAP_START,
                      get_min_block_size(initial_size),
                      PROT_READ | PROT_WRITE,
                      MAP_PRIVATE | MAP_ANONYMOUS,
                      -1, 0);
-    if (ptr == MAP_FAILED)
+    if (new_map_ptr == MAP_FAILED)
         return MAP_FAILED;
     mem_t *mem_header = HEAP_START;
     init_mem_header(mem_header,
@@ -67,7 +67,7 @@ void *heap_init(size_t initial_size) {
                     get_min_block_size(initial_size),
                     1);
     part_memory(get_min_block_size(initial_size));
-    return ((char *) ptr) + MEM_T_SIZE;
+    return ((char *) new_map_ptr) + MEM_T_SIZE;
 }
 
 static void *allocate_page(mem_t *mem_header, size_t query) {
