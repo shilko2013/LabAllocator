@@ -1,5 +1,7 @@
 #include "mem.h"
 
+#define MEM_T_SIZE sizeof(mem_t)
+
 void memalloc_debug_struct_info(FILE *f, mem_t const *const address) {
     size_t i;
     fprintf(f,
