@@ -1,7 +1,9 @@
 #ifndef _MEM_H_
 #define _MEM_H_
 
-#define __USE_MISC
+#ifndef __USE_MISC
+#    define __USE_MISC
+#endif
 
 #include <stddef.h>
 #include <stdint.h>
