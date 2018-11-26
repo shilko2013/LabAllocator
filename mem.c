@@ -140,21 +140,28 @@ void *find_prev_block(mem_t *mem_header) {
     return start_mem_header;
 }
 
+static int has_prev_page(mem_t *mem_header, mem_t *prev_mem_header) {
+    return prev_mem_header
+        && prev_mem_header->is_free
+        && ((mem_t *) ((char *) prev_mem_header) + prev_mem_header->capacity + MEM_T_SIZE) == mem_header;
+}
+
+static int has_next_page(mem_t *mem_header) {
+    return mem_header->next
+        && mem_header->next->is_free
+        && mem_header->next == ((mem_t *) ((char *) mem_header) + mem_header->capacity + sizeof(mem_header));
+}
+
 void _free(void *mem) {
     mem_t *mem_header = mem - MEM_T_SIZE;
     mem_t *prev_mem_header = find_prev_block(mem_header);
     mem_header->is_free = 1;
-    if (prev_mem_header
-        && prev_mem_header->is_free
-        && ((mem_t *) ((char *) prev_mem_header) + prev_mem_header->capacity + MEM_T_SIZE) ==
-           mem_header) {
+    if (has_prev_page(mem_header, prev_mem_header)){
         prev_mem_header->capacity += mem_header->capacity + MEM_T_SIZE;
         prev_mem_header->next = mem_header->next;
         mem_header = prev_mem_header;
     }
-    if (mem_header->next
-        && mem_header->next->is_free
-        && mem_header->next == ((mem_t *) ((char *) mem_header) + mem_header->capacity + sizeof(mem_header))) {
+    if (has_next_page(mem_header)) {
         mem_header->capacity += mem_header->next->capacity + MEM_T_SIZE;
         mem_header->next = mem_header->next->next;
     }
