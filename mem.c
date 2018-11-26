@@ -89,13 +89,13 @@ static void *try_allocate_block(size_t query) {
             continue;
         else if (mem_header->is_free)
             return allocate_page(mem_header, query);
-    } while ((mem_header = mem_header->next) != NULL);
+    } while ((mem_header = mem_header->next));
     return NULL;
 }
 
 static void *try_allocate_new_block(size_t query) {
     mem_t *mem_header = HEAP_START;
-    for (; mem_header->next != NULL; mem_header = mem_header->next);
+    for (; mem_header->next; mem_header = mem_header->next);
     void *new_block = mmap(((char *) mem_header) + MEM_T_SIZE + mem_header->capacity,
                            get_min_block_size(query),
                            PROT_READ | PROT_WRITE,
@@ -125,7 +125,7 @@ static void *try_allocate_new_block(size_t query) {
 
 void *_malloc(size_t query) {
     void *result;
-    if ((result = try_allocate_block(query)) != NULL)
+    if ((result = try_allocate_block(query)))
         return result;
     else
         return try_allocate_new_block(query);
@@ -134,7 +134,7 @@ void *_malloc(size_t query) {
 void *find_prev_block(mem_t *mem_header) {
     mem_t *start_mem_header = HEAP_START;
     for (; start_mem_header->next != mem_header &&
-           start_mem_header->next != NULL; start_mem_header = start_mem_header->next);
+           start_mem_header->next; start_mem_header = start_mem_header->next);
     if (start_mem_header->next != mem_header)
         return NULL;
     return start_mem_header;
