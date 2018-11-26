@@ -25,6 +25,8 @@ typedef struct mem_t {
 } mem_t;
 #pragma pack(pop)
 
+#define MEM_T_SIZE sizeof(mem_t)
+
 void *_malloc(size_t query);
 
 void _free(void *mem);

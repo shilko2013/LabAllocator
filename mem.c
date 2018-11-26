@@ -11,7 +11,7 @@ void memalloc_debug_struct_info(FILE *f, mem_t const *const address) {
          i < DEBUG_FIRST_BYTES && i < address->capacity;
          ++i)
         fprintf(f, "%hhX",
-                ((char *) address)[sizeof(mem_t) + i]);
+                ((char *) address)[MEM_T_SIZE + i]);
     putc('\n', f);
 }
 
@@ -32,18 +32,18 @@ static void init_mem_header(mem_t *this, mem_t *next, size_t capacity, int is_fr
 
 static void part_memory(size_t initial_size) {
     mem_t *mem_header = HEAP_START;
-    size_t number_blocks = initial_size / (BLOCK_SIZE + sizeof(mem_t));
+    size_t number_blocks = initial_size / (BLOCK_SIZE + MEM_T_SIZE);
     mem_t *prev_mem_header;
     for (size_t i = 0; i < number_blocks; ++i) {
-        init_mem_header(mem_header, (mem_t *) (((char *) mem_header) + sizeof(mem_t) + BLOCK_SIZE),
+        init_mem_header(mem_header, (mem_t *) (((char *) mem_header) + MEM_T_SIZE + BLOCK_SIZE),
                         BLOCK_SIZE, 1);
         prev_mem_header = mem_header;
-        mem_header = (mem_t *) (((char *) mem_header) + sizeof(mem_t) + BLOCK_SIZE);
+        mem_header = (mem_t *) (((char *) mem_header) + MEM_T_SIZE + BLOCK_SIZE);
     }
-    size_t remain = (initial_size - (BLOCK_SIZE + sizeof(mem_t)) * (number_blocks - 1));
+    size_t remain = (initial_size - (BLOCK_SIZE + MEM_T_SIZE) * (number_blocks - 1));
     if (!remain)
         prev_mem_header->next = NULL;
-    else if (remain <= sizeof(mem_t)) {
+    else if (remain <= MEM_T_SIZE) {
         prev_mem_header->next = NULL;
         prev_mem_header->capacity += remain;
     } else
@@ -64,28 +64,28 @@ void *heap_init(size_t initial_size) {
                     get_min_block_size(initial_size),
                     1);
     part_memory(get_min_block_size(initial_size));
-    return ((char *) ptr) + sizeof(mem_t);
+    return ((char *) ptr) + MEM_T_SIZE;
 }
 
 static void *allocate_page(mem_t *mem_header, size_t query) {
-    if (mem_header->capacity / 2 > sizeof(mem_t)) {
-        mem_t *new_mem_header = (mem_t *) (((char *) mem_header) + sizeof(mem_t) +
+    if (mem_header->capacity / 2 > MEM_T_SIZE) {
+        mem_t *new_mem_header = (mem_t *) (((char *) mem_header) + MEM_T_SIZE +
                                                          mem_header->capacity / 2);
         init_mem_header(new_mem_header,
                         mem_header->next,
-                        mem_header->capacity / 2 - sizeof(mem_t),
+                        mem_header->capacity / 2 - MEM_T_SIZE,
                         1);
         mem_header->next = new_mem_header;
         mem_header->capacity = mem_header->capacity / 2;
     }
     mem_header->is_free = 0;
-    return ((char *) mem_header) + sizeof(mem_t);
+    return ((char *) mem_header) + MEM_T_SIZE;
 }
 
 static void *try_allocate_block(size_t query) {
     mem_t *mem_header = HEAP_START;
     do {
-        if (query + sizeof(mem_t) > mem_header->capacity)
+        if (query + MEM_T_SIZE > mem_header->capacity)
             continue;
         else if (mem_header->is_free)
             return allocate_page(mem_header, query);
@@ -96,7 +96,7 @@ static void *try_allocate_block(size_t query) {
 static void *try_allocate_new_block(size_t query) {
     mem_t *mem_header = HEAP_START;
     for (; mem_header->next != NULL; mem_header = mem_header->next);
-    void *new_block = mmap(((char *) mem_header) + sizeof(mem_t) + mem_header->capacity,
+    void *new_block = mmap(((char *) mem_header) + MEM_T_SIZE + mem_header->capacity,
                            get_min_block_size(query),
                            PROT_READ | PROT_WRITE,
                            MAP_PRIVATE | MAP_ANONYMOUS,
@@ -141,21 +141,21 @@ void *find_prev_block(mem_t *mem_header) {
 }
 
 void _free(void *mem) {
-    mem_t *mem_header = mem - sizeof(mem_t);
+    mem_t *mem_header = mem - MEM_T_SIZE;
     mem_t *prev_mem_header = find_prev_block(mem_header);
     mem_header->is_free = 1;
     if (prev_mem_header
         && prev_mem_header->is_free
-        && ((mem_t *) ((char *) prev_mem_header) + prev_mem_header->capacity + sizeof(mem_t)) ==
+        && ((mem_t *) ((char *) prev_mem_header) + prev_mem_header->capacity + MEM_T_SIZE) ==
            mem_header) {
-        prev_mem_header->capacity += mem_header->capacity + sizeof(mem_t);
+        prev_mem_header->capacity += mem_header->capacity + MEM_T_SIZE;
         prev_mem_header->next = mem_header->next;
         mem_header = prev_mem_header;
     }
     if (mem_header->next
         && mem_header->next->is_free
         && mem_header->next == ((mem_t *) ((char *) mem_header) + mem_header->capacity + sizeof(mem_header))) {
-        mem_header->capacity += mem_header->next->capacity + sizeof(mem_t);
+        mem_header->capacity += mem_header->next->capacity + MEM_T_SIZE;
         mem_header->next = mem_header->next->next;
     }
 }
