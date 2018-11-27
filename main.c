@@ -12,5 +12,5 @@ int main() {
     a = _malloc(sizeof(int *)*60000);
     memalloc_debug_heap(stdout, HEAP_START);
     printf("\n");
-    return 0;
 }
+
